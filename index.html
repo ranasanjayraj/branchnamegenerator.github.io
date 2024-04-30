@@ -116,8 +116,8 @@
                 var branchName = '';
 
                 if (taskTitle.length > 0) {
-                    if (taskTitle.length > 30) {
-                        var branchWords = taskTitle.substr(0, 30).split('-');
+                    if (taskTitle.length > 40) {
+                        var branchWords = taskTitle.substr(0, 40).split('-');
                         branchName = (prefix ? prefix + '-' : '') + branchWords.slice(0, branchWords.length).join('-');
                     } else {
                         branchName = (prefix ? prefix + '-' : '') + taskTitle;
