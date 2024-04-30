@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Name Generator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .copy-button {
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Branch Name Generator</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="prefix">Prefix</label>
+                            <select class="form-control" id="prefix">
+                                <option value="">Select a prefix</option>
+                                <option value="feature">Feature</option>
+                                <option value="bug">Bug</option>
+                                <option value="test">Test</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskTitle">Task Title</label>
+                            <input type="text" class="form-control" id="taskTitle" placeholder="Enter task title">
+                        </div>
+                        <div class="form-group">
+                            <label for="suffix">Suffix</label>
+                            <select class="form-control" id="suffix">
+                                <option value="dev" selected>Dev</option>
+                                <option value="live">Live</option>
+                                <option value="staging">Staging</option>
+                            </select>
+                        </div>
+                        <div class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" id="includeDate" checked>
+                            <label class="form-check-label" for="includeDate">Include Date</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateFormat">Date Format</label>
+                            <select class="form-control" id="dateFormat">
+                                <option value="dd-mm" selected>DD-MM</option>
+                                <option value="dd-mm-yyyy">DD-MM-YYYY</option>
+                                <option value="mm-dd-yyyy">MM-DD-YYYY</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="branchName">Branch Name</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="branchName" disabled>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary copy-button" type="button" data-target="#branchName">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="saveSettings">Save settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var currentSettings = JSON.parse(localStorage.getItem('branchNameSettings')) || {};
+
+            $('#prefix').select2({
+                placeholder: 'Select a prefix',
+                allowClear: true,
+                tags: true
+            });
+
+            $('#suffix').select2({
+                placeholder: 'Select a suffix',
+                allowClear: false,
+                tags: true
+            });
+
+            function getDateString() {
+                var dateFormat = $('#dateFormat').val();
+                var date = new Date();
+                var year = date.getFullYear();
+                var month = String(date.getMonth() + 1).padStart(2, '0');
+                var day = String(date.getDate()).padStart(2, '0');
+
+                switch (dateFormat) {
+                    case 'dd-mm':
+                        return day + '-' + month;
+                    case 'dd-mm-yyyy':
+                        return day + '-' + month + '-' + year;
+                    case 'mm-dd-yyyy':
+                        return month + '-' + day + '-' + year;
+                }
+            }
+
+            function generateBranchName() {
+                var prefix = $('#prefix').val();
+                var taskTitle = $('#taskTitle').val().trim().replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase().replace(/\s+/g, '-');
+                var suffix = $('#suffix').val();
+                var includeDate = $('#includeDate').is(':checked');
+                var branchName = '';
+
+                if (taskTitle.length > 0) {
+                    if (taskTitle.length > 30) {
+                        var branchWords = taskTitle.substr(0, 30).split('-');
+                        branchName = (prefix ? prefix + '-' : '') + branchWords.slice(0, branchWords.length).join('-');
+                    } else {
+                        branchName = (prefix ? prefix + '-' : '') + taskTitle;
+                    }
+
+                    if (includeDate) {
+                        branchName += '-' + getDateString();
+                    }
+
+                    branchName += '-' + suffix;
+                }
+
+                $('#branchName').val(branchName);
+            }
+
+            $('#taskTitle, #prefix, #suffix, #includeDate, #dateFormat').on('input change', function() {
+                generateBranchName();
+            });
+
+            $('.copy-button').click(function() {
+                var $target = $($(this).data('target'));
+                var $temp = $("<input>");
+                $("body").append($temp);
+                $temp.val($target.val()).select();
+                document.execCommand("copy");
+                $temp.remove();
+                $(this).text('Copied!');
+                setTimeout(function() {
+                    $('.copy-button').text('Copy');
+                }, 2000);
+            });
+
+            $('#saveSettings').click(function() {
+                var settings = {
+                    prefix: $('#prefix').val(),
+                    taskTitle: $('#taskTitle').val(),
+                    suffix: $('#suffix').val(),
+                    includeDate: $('#includeDate').is(':checked'),
+                    dateFormat: $('#dateFormat').val()
+                };
+
+                localStorage.setItem('branchNameSettings', JSON.stringify(settings));
+                alert('Settings saved successfully!');
+            });
+
+            // Load saved settings
+            $('#prefix').val(currentSettings.prefix || '').trigger('change');
+            $('#taskTitle').val(currentSettings.taskTitle || '');
+            $('#suffix').val(currentSettings.suffix || 'dev').trigger('change');
+            $('#includeDate').prop('checked', currentSettings.includeDate !== undefined ? currentSettings.includeDate : true);
+            $('#dateFormat').val(currentSettings.dateFormat || 'dd-mm').trigger('change');
+            generateBranchName();
+        });
+    </script>
+</body>
+</html>
